@@ -13,6 +13,8 @@ public class ChannelHandler implements Parcelable{
     public String playlist_id;
     public String date;
     public String image;
+    public String total;
+
 
     public ChannelHandler(){
 
@@ -58,12 +60,21 @@ public class ChannelHandler implements Parcelable{
         this.image = image;
     }
 
+    public String getTotal() {
+        return total;
+    }
+
+    public void setTotal(String total) {
+        this.total = total;
+    }
+
     public ChannelHandler(Parcel src){
         this.ccd_uid = src.readString();
         this.image = src.readString();
         this.title = src.readString();
         this.playlist_id = src.readString();
         this.date = src.readString();
+        this.total = src.readString();
 
 
     }
@@ -80,6 +91,7 @@ public class ChannelHandler implements Parcelable{
         dest.writeString(this.title);
         dest.writeString(this.playlist_id);
         dest.writeString(this.date);
+        dest.writeString(this.total);
     }
     public static final Creator CREATOR = new Creator() { //데이터 가져오기
 

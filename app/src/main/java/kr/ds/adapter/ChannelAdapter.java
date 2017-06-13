@@ -56,10 +56,11 @@ public class ChannelAdapter extends BaseAdapter {
         final ViewHolder holder;
         if (convertView == null) {
             holder = new ViewHolder();
-            convertView = mInflater.inflate(R.layout.fragment_list1_item1,null);
+            convertView = mInflater.inflate(R.layout.fragment_list1_item2,null);
             holder.imageView = (ImageView) convertView.findViewById(R.id.circularImageView);
             holder.textView1 = (TextView) convertView.findViewById(R.id.textView1);
             holder.textView2 = (TextView) convertView.findViewById(R.id.textView2);
+            holder.textView_count = (TextView) convertView.findViewById(R.id.textView_count);
 
             convertView.setTag(holder);
         } else {
@@ -90,13 +91,20 @@ public class ChannelAdapter extends BaseAdapter {
             holder.textView2.setText("");
         }
 
+        if(!DsObjectUtils.isEmpty(mData.get(position).getTotal())){
+            holder.textView_count.setVisibility(View.VISIBLE);
+            holder.textView_count.setText(mData.get(position).getTotal());
+        }else {
+            holder.textView_count.setText("");
+        }
+
         return convertView;
     }
 
 
     class ViewHolder {
         ImageView imageView;
-        TextView textView1, textView2;
+        TextView textView1, textView2, textView_count;
     }
 
 }

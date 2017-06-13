@@ -359,6 +359,15 @@ public class SubActivity extends BaseActivity implements YouTubePlayer.OnInitial
             mTimer.cancel();
             mTimer = null;
         }
+        if(isRecored) {
+            if (recorder != null) {
+                try {
+                    recorder.stopRecording();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
     private void SendMMS() {
         if(!DsObjectUtils.isEmpty(mSavedata.getTitle()) && !DsObjectUtils.isEmpty(mSavedata.getDd_uid())) {

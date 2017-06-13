@@ -80,6 +80,7 @@ public class ChannelData extends BaseData {
                             mChannelHandler.setImage(jsonObject1.getString("image"));
                             mChannelHandler.setPlaylist_id(jsonObject1.getString("playlist_id"));
                             mChannelHandler.setDate(jsonObject1.getString("date"));
+                            mChannelHandler.setTotal(jsonObject1.getString("total"));
                         }
                     }
                 }
