@@ -24,7 +24,7 @@ import kr.ds.karaokesong.R;
  */
 public class VisualizerView extends FrameLayout {
 
-    private static final int DEFAULT_NUM_COLUMNS = 20;
+    private static final int DEFAULT_NUM_COLUMNS = 4;
     private static final int RENDAR_RANGE_TOP = 0;
     private static final int RENDAR_RANGE_BOTTOM = 1;
     private static final int RENDAR_RANGE_TOP_BOTTOM = 2;
@@ -55,7 +55,7 @@ public class VisualizerView extends FrameLayout {
     private void init(Context context, AttributeSet attrs) {
         TypedArray args = context.obtainStyledAttributes(attrs, R.styleable.visualizerView);
         mNumColumns = args.getInteger(R.styleable.visualizerView_numColumns, DEFAULT_NUM_COLUMNS);
-        mRenderColor = args.getColor(R.styleable.visualizerView_renderColor, Color.WHITE);
+        mRenderColor = args.getColor(R.styleable.visualizerView_renderColor, Color.BLACK);
         mType = args.getInt(R.styleable.visualizerView_renderType, Type.BAR.getFlag());
         mRenderRange = args.getInteger(R.styleable.visualizerView_renderRange, RENDAR_RANGE_TOP);
         args.recycle();

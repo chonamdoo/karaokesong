@@ -2,44 +2,147 @@ package kr.ds.karaokesong;
 
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.Intent;
+import android.database.Cursor;
+import android.media.AudioFormat;
+import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.view.View;
 import android.view.ViewTreeObserver;
+import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.youtube.player.YouTubeInitializationResult;
 import com.google.android.youtube.player.YouTubePlayer;
 import com.google.android.youtube.player.YouTubePlayerFragment;
+import com.nhaarman.listviewanimations.appearance.simple.AlphaInAnimationAdapter;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.Locale;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import kr.ds.adapter.ListAdapter;
+import kr.ds.config.Config;
+import kr.ds.data.BaseResultListener;
+import kr.ds.data.ListData;
+import kr.ds.db.BookMarkDB;
 import kr.ds.handler.ListHandler;
 import kr.ds.utils.DsObjectUtils;
 import kr.ds.view.VisualizerView;
+import kr.ds.widget.ScrollListView;
+import omrecorder.AudioChunk;
+import omrecorder.AudioSource;
+import omrecorder.OmRecorder;
+import omrecorder.PullTransport;
+import omrecorder.Recorder;
 
 /**
  * Created by Administrator on 2017-06-12.
  */
-public class SubActivity extends BaseActivity{
+public class SubActivity extends BaseActivity implements YouTubePlayer.OnInitializedListener, View.OnClickListener{
+
+    private AudioSource mic() {
+        return new AudioSource.Smart(MediaRecorder.AudioSource.MIC, AudioFormat.ENCODING_PCM_16BIT,
+                AudioFormat.CHANNEL_IN_MONO, 44100);
+    }
+    private File file(String filename) {
+        if (FileExists(Environment.getExternalStorageDirectory().getAbsolutePath()+"/karaokesong/") == false) {
+            SetMkdirs(Environment.getExternalStorageDirectory().getAbsolutePath()+"/karaokesong/");
+        }
+        return new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/karaokesong/", filename+".wav");
+    }
+
+    private boolean FileExists(String url) {
+        File files = new File(url);
+        Boolean check;
+        if (files.exists() == true) {
+            check = true;
+        } else {
+            check = false;
+        }
+        return check;
+    }
+
+    private void SetMkdirs(String url) {
+        try {
+            File path = new File(url);
+            if (!path.isDirectory()) {
+                path.mkdirs();
+            }
+        } catch (Exception e) {
+        }
+    }
+
+    private void animateVoice(final float maxPeak) {
+        Log.i("TEST",maxPeak+"");
+        mButton.animate().scaleX(1 + maxPeak).scaleY(1 + maxPeak).setDuration(10).start();
+    }
+
+    private void setupRecorder() {
+        Calendar calendar = new GregorianCalendar(Locale.KOREA);
+        SimpleDateFormat fm = new SimpleDateFormat(
+                "yyyy-MM-dd_HH:mm:ss");
+        String strDate = fm.format(calendar.getTime());
+
+        recorder = OmRecorder.wav(
+                new PullTransport.Default(mic(), new PullTransport.OnAudioChunkPulledListener() {
+                    @Override public void onAudioChunkPulled(AudioChunk audioChunk) {
+                        animateVoice((float) (audioChunk.maxAmplitude() / 200.0));
+                    }
+                }), file(strDate));
+    }
+
     private ListHandler mSavedata;
     public static final String API_KEY = "AIzaSyAkfPX3uF_hALFjYOUhwlhewgaqewl08XE";
 
     private VisualizerView mVisualizerView;
     private VisualizerView mVisualizerView2;
-    private TimerTask second;
+    private TimerTask mTimerTask;
+    private Timer mTimer;
+    private YouTubePlayer mYouTubePlayer;
+    private boolean isPlaying = false;
 
-    private final Handler handler = new Handler();
+    private TextView mTextViewTitle;
 
+    private ScrollListView mListView;
+    private ListAdapter mListAdapter;
+    private ArrayList<ListHandler> mData;
+
+    private boolean isVisualizerView = false;
+    private boolean isVisualizerView2 = false;
+
+    private Button mButton;
+    private Recorder recorder;
+    private boolean isRecored = false;
+
+    private LinearLayout mLinearLayoutShare;
+    private LinearLayout mLinearLayoutBookMark;
+    private LinearLayout mLinearLayoutLike;
+
+    private BookMarkDB mBookMarkDB;
+    private Cursor mCursor;
+    private ImageView mImageViewBookMark;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        mBookMarkDB = new BookMarkDB(getApplicationContext());
         if(savedInstanceState != null){
             mSavedata = (ListHandler) savedInstanceState.getParcelable("data");
         }else{
@@ -48,24 +151,48 @@ public class SubActivity extends BaseActivity{
 
         setContentView(R.layout.activty_sub);
 
+        mImageViewBookMark = (ImageView)findViewById(R.id.imageView_bookmark);
+        (mLinearLayoutShare = (LinearLayout) findViewById(R.id.linearLayout_share)).setOnClickListener(this);
+        (mLinearLayoutBookMark = (LinearLayout) findViewById(R.id.linearLayout_bookmark)).setOnClickListener(this);
+        (mLinearLayoutLike = (LinearLayout) findViewById(R.id.linearLayout_like)).setOnClickListener(this);
 
-        second = new TimerTask() {
+        (mButton = (Button) findViewById(R.id.button)).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void run() {
-                Update();
+            public void onClick(View v) {
+                if(!isRecored) {
+                    isRecored = true;
+                    recorder.startRecording();
+                }else{
+                    isRecored = false;
+                    try {
+                        recorder.stopRecording();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
-        };
-        Timer timer = new Timer();
-        timer.schedule(second, 0, 500);
+        });
 
-
+        mListView = (ScrollListView) findViewById(R.id.listView);
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                                    int position, long id) {
+                // TODO Auto-generated method stub
+                Intent intent = new Intent(getApplicationContext(), SubActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                intent.putExtra("data", mData.get(position));
+                startActivity(intent);
+            }
+        });
+        mTextViewTitle = (TextView) findViewById(R.id.textView_title);
         mVisualizerView = (VisualizerView) findViewById(R.id.visualizer);
-
         ViewTreeObserver observer = mVisualizerView.getViewTreeObserver();
         observer.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 mVisualizerView.setBaseY(mVisualizerView.getHeight());
+                isVisualizerView = true;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                     mVisualizerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 } else {
@@ -74,13 +201,12 @@ public class SubActivity extends BaseActivity{
             }
         });
 
-
         mVisualizerView2 = (VisualizerView) findViewById(R.id.visualizer2);
-
         ViewTreeObserver observer2 = mVisualizerView2.getViewTreeObserver();
         observer.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
+                isVisualizerView2 = true;
                 mVisualizerView2.setBaseY(mVisualizerView2.getHeight());
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                     mVisualizerView2.getViewTreeObserver().removeOnGlobalLayoutListener(this);
@@ -90,9 +216,15 @@ public class SubActivity extends BaseActivity{
             }
         });
 
-
-
-
+        mTimerTask = new TimerTask() {
+            @Override
+            public void run() {
+                Update();
+            }
+        };
+        mTimer = new Timer();
+        mTimer.schedule(mTimerTask, 0, 500);
+        setupRecorder();
 
         FragmentManager fm = getFragmentManager();
         String tag = YouTubePlayerFragment.class.getSimpleName();
@@ -103,24 +235,180 @@ public class SubActivity extends BaseActivity{
             ft.add(R.id.content_frame, playerFragment, tag);
             ft.commit();
         }
+        playerFragment.initialize(API_KEY, this);
+        if(!DsObjectUtils.isEmpty(mSavedata.getTitle())){
+            mTextViewTitle.setText(mSavedata.getTitle());
+        }
 
-        playerFragment.initialize(API_KEY, new YouTubePlayer.OnInitializedListener() {
+        new ListData().clear().setCallBack(new BaseResultListener() {
             @Override
-            public void onInitializationSuccess(YouTubePlayer.Provider provider, YouTubePlayer youTubePlayer, boolean b) {
-                if(!DsObjectUtils.isEmpty(mSavedata.getVideo_id())){
-                    youTubePlayer.loadVideo(mSavedata.getVideo_id());
+            public <T> void OnComplete() {
+            }
+            @Override
+            public <T> void OnComplete(Object data) {
+
+                if(data != null){
+                    mData = (ArrayList<ListHandler>) data;
+                    mListAdapter = new ListAdapter(getApplicationContext(), mData);
+                    AlphaInAnimationAdapter mAlphaInAnimationAdapter = new AlphaInAnimationAdapter(mListAdapter);
+                    mAlphaInAnimationAdapter.setAbsListView(mListView);
+                    mListView.setAdapter(mAlphaInAnimationAdapter);
+                }else{
+                    mListView.setAdapter(null);
                 }
             }
 
             @Override
-            public void onInitializationFailure(YouTubePlayer.Provider provider, YouTubeInitializationResult youTubeInitializationResult) {
+            public void OnMessage(String str) {
+
+            }
+        }).setUrl(Config.URL+ Config.URL_XML+ Config.URL_RECOM).setParam("").getView();
+
+        mBookMarkDB.open();
+        mCursor = mBookMarkDB.BookMarkConfirm(mSavedata.getDd_uid());
+        if(mCursor.getCount() > 0){
+            mImageViewBookMark.setImageResource(R.drawable.icon_book_on);
+        }else{
+            mImageViewBookMark.setImageResource(R.drawable.icon_book_off);
+        }
+        mCursor.close();
+        mBookMarkDB.close();
+
+    }
+
+    protected void Update() {
+        if(isVisualizerView && isVisualizerView2) {
+            if (isPlaying) {
+                mVisualizerView.receive(new Random().nextInt(100) + 1);
+                mVisualizerView2.receive(new Random().nextInt(100) + 1);
+            } else {
+                mVisualizerView.receive(0);
+                mVisualizerView2.receive(0);
+            }
+        }
+    }
+
+    @Override
+    public void onInitializationSuccess(YouTubePlayer.Provider provider, YouTubePlayer youTubePlayer, boolean b) {
+        mYouTubePlayer = youTubePlayer;
+        if(!DsObjectUtils.isEmpty(mSavedata.getVideo_id())){
+            mYouTubePlayer.loadVideo(mSavedata.getVideo_id());
+        }
+        mYouTubePlayer.setPlaybackEventListener(new YouTubePlayer.PlaybackEventListener() {
+            @Override
+            public void onPlaying() {
+                Log.i("TEST","onPlaying");
+                isPlaying = true;
+            }
+
+            @Override
+            public void onPaused() {
+                Log.i("TEST","onStopped");
+                isPlaying = false;
+
+            }
+
+            @Override
+            public void onStopped() {
+                Log.i("TEST","onStopped");
+                isPlaying = false;
+            }
+
+            @Override
+            public void onBuffering(boolean b) {
+            }
+
+            @Override
+            public void onSeekTo(int i) {
+            }
+        });
+        mYouTubePlayer.setPlayerStateChangeListener(new YouTubePlayer.PlayerStateChangeListener() {
+            @Override
+            public void onLoading() {
+            }
+
+            @Override
+            public void onLoaded(String s) {
+            }
+
+            @Override
+            public void onAdStarted() {
+            }
+
+            @Override
+            public void onVideoStarted() {
+            }
+
+            @Override
+            public void onVideoEnded() {
+            }
+            @Override
+            public void onError(YouTubePlayer.ErrorReason errorReason) {
 
             }
         });
     }
 
-    protected void Update() {
-        mVisualizerView.receive(new Random().nextInt(100)+1);
-        mVisualizerView2.receive(new Random().nextInt(100)+1);
+    @Override
+    public void onInitializationFailure(YouTubePlayer.Provider provider, YouTubeInitializationResult youTubeInitializationResult) {
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(mTimer != null){
+            mTimer.cancel();
+            mTimer = null;
+        }
+    }
+    private void SendMMS() {
+        if(!DsObjectUtils.isEmpty(mSavedata.getTitle()) && !DsObjectUtils.isEmpty(mSavedata.getDd_uid())) {
+            try {
+                Intent NextIntent = new Intent(Intent.ACTION_SEND);
+                NextIntent.setType("text/plain");
+                NextIntent.putExtra(Intent.EXTRA_SUBJECT, mSavedata.getTitle());
+                NextIntent.putExtra(Intent.EXTRA_TEXT, "반갑습니다.^^ 무료노래방 입니다.\n\n 어플다운:\n" + "https://play.google.com/store/apps/details?id=kr.ds.karaokesong");
+                startActivity(Intent.createChooser(NextIntent, mSavedata.getTitle() + "공유하기"));
+            } catch (Exception e) {
+                // TODO: handle exception
+                Log.i("TEST", e.toString() + "");
+            }
+        }else {
+            Toast.makeText(getApplicationContext(),"계속 문제가 발생시 관리자에게 문의해주시기 바랍니다.",Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()){
+            case R.id.linearLayout_share:
+                SendMMS();
+                break;
+            case R.id.linearLayout_bookmark:
+
+                if(!DsObjectUtils.isEmpty(mSavedata.getDd_uid())) {
+                    mBookMarkDB.open();
+                    mCursor = mBookMarkDB.BookMarkConfirm(mSavedata.getDd_uid());
+                    if (mCursor.getCount() == 0) {
+                        mBookMarkDB.createNote(mSavedata.getDd_uid());
+                        mImageViewBookMark.setImageResource(R.drawable.icon_book_on);
+                        Toast.makeText(getApplicationContext(), R.string.bookmark_save, Toast.LENGTH_SHORT).show();
+                    } else {
+                        mBookMarkDB.deleteNote(mSavedata.getDd_uid());
+                        mImageViewBookMark.setImageResource(R.drawable.icon_book_off);
+                        Toast.makeText(getApplicationContext(), R.string.bookmark_cancel, Toast.LENGTH_SHORT).show();
+                    }
+                    mCursor.close();
+                    mBookMarkDB.close();
+
+                    setResult(RESULT_OK);
+                }else{
+                    Toast.makeText(getApplicationContext(),"계속 문제가 발생시 관리자에게 문의해주시기 바랍니다.",Toast.LENGTH_SHORT).show();
+                }
+
+                break;
+            case R.id.linearLayout_like:
+
+                break;
+        }
     }
 }

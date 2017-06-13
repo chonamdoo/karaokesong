@@ -11,6 +11,7 @@ public class Config {
 	public static String URL_SEARCH = "search.php";
 	public static String URL_BOOKMARK = "bookmark.php";
 	public static String URL_CHANNEL = "channel.php";
+	public static String URL_RECOM = "recom.php";
 
 
 	public static String URL_GCM = "gcm/gcm.php";

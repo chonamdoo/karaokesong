@@ -131,7 +131,7 @@
                     <View
                         android:background="@drawable/tv_rest_03"
                         android:layout_width="1px"
-                        android:layout_height="wrap_content"/>
+                        android:layout_height="match_parent"/>
 
                     <LinearLayout
                         android:id="@+id/linearLayout_location"

@@ -17,11 +17,11 @@ public class BookMarkDB {
 	
     private DatabaseHelper mDbHelper;
     private SQLiteDatabase mDb;
-    private static final String DATABASE_CREATE = "create table bookmark (_id integer primary key autoincrement, " +
+    private static final String DATABASE_CREATE = "create table karaokesong (_id integer primary key autoincrement, " +
     																"contents_id text not null "+
     																");";    
-    private static final String DATABASE_NAME = "camping.db";
-    private static final String DATABASE_TABLE = "bookmark";
+    private static final String DATABASE_NAME = "karaokesong.db";
+    private static final String DATABASE_TABLE = "karaokesong";
     private static final int DATABASE_VERSION = 1;
     private final Context mCtx;
     
