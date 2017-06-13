@@ -21,6 +21,7 @@ import kr.ds.fragment.BaseFragment;
 import kr.ds.fragment.BookMarkFragment;
 import kr.ds.fragment.ChannelFragment;
 import kr.ds.fragment.List1Fragment;
+import kr.ds.fragment.RecordFragment;
 import kr.ds.fragment.SearchFragment;
 import kr.ds.fragment.SettingFragment;
 import kr.ds.store.MainStoreTypeDialog;
@@ -37,6 +38,7 @@ public class MainActivity extends MainBaseActivity implements View.OnClickListen
     private BaseFragment mFragment3 = null;
     private BaseFragment mFragment4 = null;
     private BaseFragment mFragment5 = null;
+    private BaseFragment mFragment6 = null;
 
 
     private Toolbar mToolbar;
@@ -46,14 +48,16 @@ public class MainActivity extends MainBaseActivity implements View.OnClickListen
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
 
 
-    private LinearLayout mLinearLayoutTab1,mLinearLayoutTab2,mLinearLayoutTab3,mLinearLayoutTab4,mLinearLayoutTab5;
-    private ImageView mImageViewTab1,mImageViewTab2,mImageViewTab3,mImageViewTab4,mImageViewTab5;
+    private LinearLayout mLinearLayoutTab1,mLinearLayoutTab2,mLinearLayoutTab3,mLinearLayoutTab4,mLinearLayoutTab5, mLinearLayoutTab6;
+    private ImageView mImageViewTab1,mImageViewTab2,mImageViewTab3,mImageViewTab4,mImageViewTab5,mImageViewTab6;
 
     private final int TAB1 = 1;
     private final int TAB2 = 2;
     private final int TAB3 = 3;
     private final int TAB4 = 4;
     private final int TAB5 = 5;
+    private final int TAB6 = 6;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -66,12 +70,14 @@ public class MainActivity extends MainBaseActivity implements View.OnClickListen
         (mLinearLayoutTab3 = (LinearLayout)findViewById(R.id.linearLayout_tab3)).setOnClickListener(this);
         (mLinearLayoutTab4 = (LinearLayout)findViewById(R.id.linearLayout_tab4)).setOnClickListener(this);
         (mLinearLayoutTab5 = (LinearLayout)findViewById(R.id.linearLayout_tab5)).setOnClickListener(this);
+        (mLinearLayoutTab6 = (LinearLayout)findViewById(R.id.linearLayout_tab6)).setOnClickListener(this);
 
         mImageViewTab1 = (ImageView) findViewById(R.id.imageView_tab1);
         mImageViewTab2 = (ImageView) findViewById(R.id.imageView_tab2);
         mImageViewTab3 = (ImageView) findViewById(R.id.imageView_tab3);
         mImageViewTab4 = (ImageView) findViewById(R.id.imageView_tab4);
         mImageViewTab5 = (ImageView) findViewById(R.id.imageView_tab5);
+        mImageViewTab6 = (ImageView) findViewById(R.id.imageView_tab6);
 
         setTab(TAB1);
 
@@ -115,6 +121,9 @@ public class MainActivity extends MainBaseActivity implements View.OnClickListen
         if (mFragment5 != null) {
             transaction.hide(mFragment5);
         }
+        if (mFragment6 != null) {
+            transaction.hide(mFragment6);
+        }
     }
 
 
@@ -134,6 +143,7 @@ public class MainActivity extends MainBaseActivity implements View.OnClickListen
         mImageViewTab3.setBackgroundResource(R.drawable.tab3_off);
         mImageViewTab4.setBackgroundResource(R.drawable.tab4_off);
         mImageViewTab5.setBackgroundResource(R.drawable.tab5_off);
+        mImageViewTab6.setBackgroundResource(R.drawable.tab6_off);
 
         if(tab == TAB1){
             mImageViewTab1.setBackgroundResource(R.drawable.tab1_on);
@@ -176,6 +186,15 @@ public class MainActivity extends MainBaseActivity implements View.OnClickListen
                 mFt.show(mFragment5);
             }
 
+        }else if(tab == TAB6){
+            mImageViewTab6.setBackgroundResource(R.drawable.tab6_on);
+            if (mFragment6 == null) {
+                mFragment6 = BaseFragment.newInstance(RecordFragment.class);
+                mFt.add(R.id.content_frame, mFragment6);
+            } else {
+                mFt.show(mFragment6);
+            }
+
         }
         mFt.commitAllowingStateLoss();
     }
@@ -211,6 +230,9 @@ public class MainActivity extends MainBaseActivity implements View.OnClickListen
                 break;
             case R.id.linearLayout_tab5:
                 setTab(TAB5);
+                break;
+            case R.id.linearLayout_tab6:
+                setTab(TAB6);
                 break;
         }
     }

@@ -42,6 +42,7 @@ import kr.ds.config.Config;
 import kr.ds.data.BaseResultListener;
 import kr.ds.data.ListData;
 import kr.ds.db.BookMarkDB;
+import kr.ds.db.RecordDB;
 import kr.ds.handler.ListHandler;
 import kr.ds.utils.DsObjectUtils;
 import kr.ds.view.VisualizerView;
@@ -62,9 +63,11 @@ public class SubActivity extends BaseActivity implements YouTubePlayer.OnInitial
                 AudioFormat.CHANNEL_IN_MONO, 44100);
     }
     private File file(String filename) {
+
         if (FileExists(Environment.getExternalStorageDirectory().getAbsolutePath()+"/karaokesong/") == false) {
             SetMkdirs(Environment.getExternalStorageDirectory().getAbsolutePath()+"/karaokesong/");
         }
+        mUrlFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/karaokesong/", filename+".wav").getAbsolutePath();
         return new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/karaokesong/", filename+".wav");
     }
 
@@ -90,7 +93,6 @@ public class SubActivity extends BaseActivity implements YouTubePlayer.OnInitial
     }
 
     private void animateVoice(final float maxPeak) {
-        Log.i("TEST",maxPeak+"");
         mButton.animate().scaleX(1 + maxPeak).scaleY(1 + maxPeak).setDuration(10).start();
     }
 
@@ -139,10 +141,14 @@ public class SubActivity extends BaseActivity implements YouTubePlayer.OnInitial
     private Cursor mCursor;
     private ImageView mImageViewBookMark;
 
+    private RecordDB mRecordDB;
+    private String mUrlFile = "";
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mBookMarkDB = new BookMarkDB(getApplicationContext());
+        mRecordDB = new RecordDB(getApplicationContext());
         if(savedInstanceState != null){
             mSavedata = (ListHandler) savedInstanceState.getParcelable("data");
         }else{
@@ -162,6 +168,15 @@ public class SubActivity extends BaseActivity implements YouTubePlayer.OnInitial
                 if(!isRecored) {
                     isRecored = true;
                     recorder.startRecording();
+
+                    Calendar calendar = new GregorianCalendar(Locale.KOREA);
+                    SimpleDateFormat fm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    mRecordDB.open();
+                    mRecordDB.createNote(mSavedata.getDd_uid(), mSavedata.getImage(), mSavedata.getTitle(), mSavedata.getVideo_id(), mUrlFile, fm.format(calendar.getTime()));
+                    Toast.makeText(getApplicationContext(), "녹음 저장", Toast.LENGTH_SHORT).show();
+                    mCursor.close();
+                    mRecordDB.close();
+
                 }else{
                     isRecored = false;
                     try {
@@ -393,6 +408,8 @@ public class SubActivity extends BaseActivity implements YouTubePlayer.OnInitial
                 SendMMS();
                 break;
             case R.id.linearLayout_bookmark:
+
+
 
                 if(!DsObjectUtils.isEmpty(mSavedata.getDd_uid())) {
                     mBookMarkDB.open();

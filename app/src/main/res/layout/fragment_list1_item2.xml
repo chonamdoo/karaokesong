@@ -36,7 +36,7 @@
                     android:id="@+id/textView_count"
                     android:layout_gravity="right"
                     android:gravity="center"
-                    android:layout_width="50dip"dP
+                    android:layout_width="50dip"
                     android:layout_height="match_parent"
                     android:textColor="@color/white"
                     android:textSize="16sp"
